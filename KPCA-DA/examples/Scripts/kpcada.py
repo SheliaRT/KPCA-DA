@@ -311,6 +311,10 @@ class KPCA_DA:
         See module-level tune_lambda() for full parameter documentation.
         Returns the summary dict and sets self.lambda_reg to the best value
         (best_lambda_accuracy if labels provided, else best_lambda_mmd).
+
+        Also pins self.mmd_gamma to the gamma value used during the search and
+        sets self.auto_gamma = False, so a later fit_transform() on this same
+        instance reuses the already-computed gamma instead of recomputing it.
         """
         summary = tune_lambda(
             X_source=X_source,
@@ -334,6 +338,8 @@ class KPCA_DA:
             self.lambda_reg = summary["best_lambda_accuracy"]
         else:
             self.lambda_reg = summary["best_lambda_mmd"]
+        self.mmd_gamma = summary["mmd_gamma"]
+        self.auto_gamma = False
         return summary
 
     def transform(self, X: np.ndarray) -> np.ndarray:
@@ -479,6 +485,7 @@ def tune_lambda(
         "results": records,
         "best_lambda_mmd": best_mmd_rec["lambda"],
         "results_df": pd.DataFrame(records),
+        "mmd_gamma": mmd_gamma,
     }
     if use_accuracy:
         best_acc_rec = max(records, key=lambda r: r["accuracy"])
